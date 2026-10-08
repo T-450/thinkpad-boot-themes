@@ -13,7 +13,7 @@ DEST="$THEMES_DIR/$THEME"
 if [[ "${ALLOW_NON_ROOT:-0}" != 1 && $EUID -ne 0 ]]; then
     echo "ERROR: run with sudo: sudo bash $0" >&2; exit 1
 fi
-for f in "$THEME.plymouth" "$THEME.script" background.png dot.png; do
+for f in "$THEME.plymouth" "$THEME.script" background.png seg.png seg-dim.png bullet.png; do
     [[ -f "$SRC/$f" ]] || { echo "ERROR: missing $SRC/$f" >&2; exit 1; }
 done
 command -v "$SET_THEME_CMD" >/dev/null || { echo "ERROR: $SET_THEME_CMD not found (is plymouth installed?)" >&2; exit 1; }
@@ -28,6 +28,10 @@ else
     echo "Note: $PLYMOUTH_CONF does not exist yet; $SET_THEME_CMD will create it."
 fi
 
+if [[ -d "$DEST" ]]; then
+    rm -rf -- "$DEST"
+    echo "Removed previous $DEST"
+fi
 install -d -m 755 "$DEST"
 for f in "$SRC"/*; do
     [[ -f "$f" ]] && install -m 644 "$f" "$DEST/"
