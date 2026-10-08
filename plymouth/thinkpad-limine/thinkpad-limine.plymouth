@@ -1,6 +1,6 @@
 [Plymouth Theme]
 Name=ThinkPad Limine
-Description=Boot splash matching the ThinkPad Limine menu. Artwork from distro-grub-themes (grub-theme-thinkpad 3.4, GPL-3.0).
+Description=Blueprint boot splash matching the ThinkPad Limine menu.
 ModuleName=script
 
 [script]

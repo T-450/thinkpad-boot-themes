@@ -1,11 +1,12 @@
 thinkpad-limine Plymouth theme
 
-License: GPL-3.0 (same as the artwork it uses).
+License: GPL-3.0.
 
-background.png comes from the "thinkpad" theme of distro-grub-themes v3.4
-(https://github.com/ahmedmoselhi/distro-grub-themes, originally
-AdisonCavani/distro-grub-themes), GPL-3.0. The GRUB-specific heading and footer text were
-painted out. "ThinkPad" is a trademark of Lenovo; the logo appears in the upstream artwork.
+background.png is an original wireframe drawing of a generic clamshell laptop.
+The ThinkPad wordmark in its top-left corner is cropped from the "thinkpad" theme
+of distro-grub-themes v3.4 (https://github.com/ahmedmoselhi/distro-grub-themes),
+GPL-3.0. "ThinkPad" is a trademark of Lenovo.
 
-dot.png, thinkpad-limine.script and thinkpad-limine.plymouth were written for this theme.
-Full licence text: https://www.gnu.org/licenses/gpl-3.0.txt
+seg.png, seg-dim.png, bullet.png, thinkpad-limine.script and thinkpad-limine.plymouth
+were written for this theme.
+Full licence text: LICENSE in this folder.
