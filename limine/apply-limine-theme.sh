@@ -13,17 +13,6 @@ done
 [[ -d "$LIMINE_DIR" ]] || { echo "ERROR: missing directory $LIMINE_DIR" >&2; exit 1; }
 grep -q '^default_entry:' "$LIMINE_CONF" || { echo "ERROR: no 'default_entry:' line in $LIMINE_CONF" >&2; exit 1; }
 
-global_keys() {
-    awk '/^[[:space:]]*\// { exit } /^[A-Za-z_]+:/ { print tolower(substr($0, 1, index($0, ":") - 1)) }' "$1"
-}
-
-mapfile -t HAVE < <(global_keys "$LIMINE_CONF")
-mapfile -t WANT < <(global_keys "$SNIPPET")
-MISSING=()
-for k in "${WANT[@]}"; do
-    [[ " ${HAVE[*]} " == *" $k "* ]] || MISSING+=("$k")
-done
-
 if [[ ! -f "$LIMINE_DIR/thinkpad-wallpaper.png" ]] || ! cmp -s "$WALLPAPER" "$LIMINE_DIR/thinkpad-wallpaper.png"; then
     cp "$WALLPAPER" "$LIMINE_DIR/thinkpad-wallpaper.png"
     echo "Wallpaper: $LIMINE_DIR/thinkpad-wallpaper.png"
@@ -31,33 +20,59 @@ else
     echo "Wallpaper already in place: $LIMINE_DIR/thinkpad-wallpaper.png"
 fi
 
-if (( ${#MISSING[@]} == 0 )); then
-    echo "Theme options already present: $LIMINE_CONF not modified."
+TMP="$(mktemp)"
+LOG="$(mktemp)"
+trap 'rm -f "$TMP" "$LOG"' EXIT
+
+awk -v logf="$LOG" '
+    function key(s,    k) {
+        k = tolower(substr(s, 1, index(s, ":") - 1))
+        sub(/_color/, "_colour", k)
+        return k
+    }
+    FNR == 1 { pass++ }
+    pass == 1 {
+        if ($0 ~ /^[A-Za-z_]+:/) { k = key($0); order[++n] = k; want[k] = $0 }
+        next
+    }
+    pass == 2 {
+        if ($0 ~ /^[[:space:]]*\//) nextfile
+        if ($0 ~ /^[A-Za-z_]+:/) have[key($0)] = 1
+        next
+    }
+    {
+        if (!globals_done && $0 ~ /^[[:space:]]*\//) globals_done = 1
+        if (!globals_done && ($0 ~ /^# --- (end )?ThinkPad look/ || $0 ~ /^# \(kept existing [a-z_]+\)$/)) {
+            print "removed old marker " $0 > logf
+            next
+        }
+        if (!globals_done && $0 ~ /^[A-Za-z_]+:/) {
+            k = key($0)
+            if (k in want) {
+                if (k in seen) { print "removed duplicate " $0 > logf; next }
+                seen[k] = 1
+                if ($0 != want[k]) print "updated " k > logf
+                print want[k]
+                next
+            }
+        }
+        print
+        if (!inserted && !globals_done && $0 ~ /^default_entry:/) {
+            for (i = 1; i <= n; i++)
+                if (!(order[i] in have)) { print want[order[i]]; print "added " order[i] > logf }
+            inserted = 1
+        }
+    }
+' "$SNIPPET" "$LIMINE_CONF" "$LIMINE_CONF" > "$TMP"
+
+if cmp -s "$TMP" "$LIMINE_CONF"; then
+    echo "Theme options already current: $LIMINE_CONF not modified."
 else
     BACKUP="$LIMINE_CONF.bak-theme-$(date +%F-%H%M%S)"
     cp -a "$LIMINE_CONF" "$BACKUP"
     echo "Backup:    $BACKUP"
-    for k in "${WANT[@]}"; do
-        [[ " ${MISSING[*]} " == *" $k "* ]] || echo "Kept existing: $k"
-    done
-    TMP="$(mktemp)"
-    trap 'rm -f "$TMP"' EXIT
-    awk -v snippet="$SNIPPET" -v missing=" ${MISSING[*]} " '
-        {
-            print
-            if (!done && $0 ~ /^default_entry:/) {
-                while ((getline s < snippet) > 0) {
-                    if (s !~ /^[A-Za-z_]+:/) continue
-                    k = tolower(substr(s, 1, index(s, ":") - 1))
-                    if (index(missing, " " k " ")) print s
-                }
-                close(snippet)
-                done = 1
-            }
-        }
-    ' "$LIMINE_CONF" > "$TMP"
     cat "$TMP" > "$LIMINE_CONF"
-    echo "Inserted after default_entry: ${MISSING[*]}"
+    sed 's/^/Changed:   /' "$LOG"
 fi
 
 sync
