@@ -1,5 +1,5 @@
-TEXT_R = 0.784; TEXT_G = 0.784; TEXT_B = 0.784;
-BG_R = 0.0; BG_G = 0.0; BG_B = 0.0;
+TEXT_R = 0.8;  TEXT_G = 0.8;  TEXT_B = 0.8;
+BG_R = 0.157;  BG_G = 0.157;  BG_B = 0.157;
 
 Window.SetBackgroundTopColor(BG_R, BG_G, BG_B);
 Window.SetBackgroundBottomColor(BG_R, BG_G, BG_B);
@@ -10,48 +10,41 @@ screen_w = Window.GetWidth();
 screen_h = Window.GetHeight();
 
 bg_src = Image("background.png");
-bg_scale = Math.Min(screen_w / bg_src.GetWidth(), screen_h / bg_src.GetHeight());
+bg_scale = Math.Max(screen_w / bg_src.GetWidth(), screen_h / bg_src.GetHeight());
 bg_w = Math.Int(bg_src.GetWidth() * bg_scale + 0.999);
 bg_h = Math.Int(bg_src.GetHeight() * bg_scale + 0.999);
-bg_x = screen_x + Math.Int((screen_w - bg_w) / 2);
-bg_y = screen_y + Math.Int((screen_h - bg_h) / 2);
+bg_off_x = Math.Max((screen_w - bg_w) / 2, 0.05 * screen_w - 285 * bg_scale);
+bg_off_x = Math.Min(bg_off_x, 0);
+bg_off_x = Math.Max(bg_off_x, screen_w - bg_w);
+bg_off_y = 0;
 bg_sprite = Sprite(bg_src.Scale(bg_w, bg_h));
-bg_sprite.SetPosition(bg_x, bg_y, -100);
+bg_sprite.SetPosition(screen_x + Math.Int(bg_off_x), screen_y + bg_off_y, -100);
 
-seg_n = 7;
-seg_src = Image("seg.png");
-dim_src = Image("seg-dim.png");
-seg_w = Math.Max(8, Math.Int(bg_w * 0.009));
-seg_h = Math.Max(3, Math.Int(bg_h * 0.005));
-seg_gap = Math.Int(seg_w * 0.55);
-seg_on = seg_src.Scale(seg_w, seg_h);
-seg_off = dim_src.Scale(seg_w, seg_h);
-row_w = seg_n * seg_w + (seg_n - 1) * seg_gap;
-row_x = screen_x + Math.Int((screen_w - row_w) / 2);
-row_y = bg_y + Math.Int(bg_h * 0.745 - seg_h / 2);
-for (i = 0; i < seg_n; i++) {
-    seg[i] = Sprite(seg_off);
-    seg[i].SetPosition(row_x + i * (seg_w + seg_gap), row_y, 10);
+dot_src = Image("dot.png");
+dot_size = Math.Max(6, Math.Int(screen_h * 0.014));
+dot_gap  = Math.Int(dot_size * 1.4);
+dot_img  = dot_src.Scale(dot_size, dot_size);
+dots_total = 3 * dot_size + 2 * dot_gap;
+dots_x = screen_x + Math.Int((screen_w - dots_total) / 2);
+dots_y = screen_y + Math.Int(screen_h * 0.74);
+for (i = 0; i < 3; i++) {
+    dot[i] = Sprite(dot_img);
+    dot[i].SetPosition(dots_x + i * (dot_size + dot_gap), dots_y, 10);
+    dot[i].SetOpacity(0.3);
 }
-lit = Sprite(seg_on);
-lit.SetPosition(row_x, row_y, 12);
-trail = Sprite(seg_on);
-trail.SetOpacity(0.35);
-trail.SetPosition(row_x, row_y, 11);
 
 frame = 0;
 fun refresh_callback() {
     global.frame++;
-    active = Math.Int(global.frame / 16);
-    active = active - Math.Int(active / seg_n) * seg_n;
-    prev = active - 1;
-    if (prev < 0) prev = seg_n - 1;
-    lit.SetPosition(row_x + active * (seg_w + seg_gap), row_y, 12);
-    trail.SetPosition(row_x + prev * (seg_w + seg_gap), row_y, 11);
+    for (i = 0; i < 3; i++) {
+        phase = global.frame * 0.09 - i * 0.9;
+        level = (Math.Sin(phase) + 1) / 2;
+        dot[i].SetOpacity(0.25 + 0.75 * level * level);
+    }
 }
 Plymouth.SetRefreshFunction(refresh_callback);
 
-font_px = Math.Max(12, Math.Int(bg_h / 52));
+font_px = Math.Max(10, Math.Int(screen_h / 60));
 FONT = "Sans " + font_px;
 
 fun text_sprite(str, y, z) {
@@ -61,7 +54,7 @@ fun text_sprite(str, y, z) {
     return spr;
 }
 
-message_y = bg_y + Math.Int(bg_h * 0.825);
+message_y = screen_y + Math.Int(screen_h * 0.82);
 fun display_message_callback(text) {
     global.message_sprite = text_sprite(text, message_y, 20);
 }
@@ -71,9 +64,8 @@ fun hide_message_callback(text) {
 Plymouth.SetDisplayMessageFunction(display_message_callback);
 Plymouth.SetHideMessageFunction(hide_message_callback);
 
-prompt_y = bg_y + Math.Int(bg_h * 0.58);
-entry_y = prompt_y + Math.Int(font_px * 2.6);
-bullet_src = Image("bullet.png");
+prompt_y = screen_y + Math.Int(screen_h * 0.60);
+entry_y  = prompt_y + Math.Int(font_px * 2.8);
 
 bullet_count = 0;
 fun clear_prompt() {
@@ -89,13 +81,14 @@ fun display_password_callback(prompt, bullets) {
     if (!prompt) prompt = "Password";
     global.prompt_sprite = text_sprite(prompt, prompt_y, 30);
     n = Math.Min(bullets, 32);
-    b_size = Math.Max(6, Math.Int(bg_h * 0.012));
-    b_gap = Math.Int(b_size * 0.7);
-    b_img = bullet_src.Scale(b_size, b_size);
-    row = n * b_size + (n - 1) * b_gap;
+    b_size = Math.Max(5, Math.Int(dot_size * 0.75));
+    b_gap = Math.Int(b_size * 0.8);
+    b_img = dot_src.Scale(b_size, b_size);
+    row_w = n * b_size + (n - 1) * b_gap;
     for (i = 0; i < n; i++) {
         global.bullet[i] = Sprite(b_img);
-        global.bullet[i].SetPosition(screen_x + Math.Int((screen_w - row) / 2) + i * (b_size + b_gap), entry_y, 30);
+        global.bullet[i].SetPosition(screen_x + Math.Int((screen_w - row_w) / 2) + i * (b_size + b_gap),
+                                     entry_y + Math.Int(font_px / 2), 30);
     }
     global.bullet_count = n;
 }
