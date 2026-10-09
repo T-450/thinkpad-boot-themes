@@ -16,7 +16,7 @@ For Limine 12.x with its config at `/boot/limine.conf`.
 sudo bash limine/apply-limine-theme.sh
 ```
 
-The script copies the wallpaper and the menu font into `/boot/limine/` and backs up the config before changing it. Theme settings that are already in the config are replaced in place; only missing ones are added, right after `default_entry:`. Your boot entries stay untouched, and it's safe to run again. If `limine-snapper-sync` is installed, the script runs it too.
+The script copies the wallpaper and the menu font into `/boot/limine/` and backs up the config before changing it. Theme settings that are already in the config are replaced in place; only missing ones are added, right after `default_entry:`. Your boot entries stay untouched, and it's safe to run again. The script does not run `limine-snapper-sync`, which rewrites snapshot entries. Pass `--sync` to run it after the theme is applied.
 
 If `/boot/limine/limine.conf` exists, Limine reads that file first, so the theme won't show until you move it aside. The script warns you when it finds one. To move it aside:
 
