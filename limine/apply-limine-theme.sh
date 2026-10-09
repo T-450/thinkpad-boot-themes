@@ -4,21 +4,23 @@ set -euo pipefail
 LIMINE_CONF="${LIMINE_CONF:-/boot/limine.conf}"
 LIMINE_DIR="${LIMINE_DIR:-/boot/limine}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WALLPAPER="$HERE/thinkpad-wallpaper.png"
+ASSETS=(thinkpad-wallpaper.png thinkpad-font.bin)
 SNIPPET="$HERE/limine-theme-snippet.conf"
 
-for f in "$LIMINE_CONF" "$WALLPAPER" "$SNIPPET"; do
+for f in "$LIMINE_CONF" "$SNIPPET" "${ASSETS[@]/#/$HERE/}"; do
     [[ -f "$f" ]] || { echo "ERROR: missing $f" >&2; exit 1; }
 done
 [[ -d "$LIMINE_DIR" ]] || { echo "ERROR: missing directory $LIMINE_DIR" >&2; exit 1; }
 grep -q '^default_entry:' "$LIMINE_CONF" || { echo "ERROR: no 'default_entry:' line in $LIMINE_CONF" >&2; exit 1; }
 
-if [[ ! -f "$LIMINE_DIR/thinkpad-wallpaper.png" ]] || ! cmp -s "$WALLPAPER" "$LIMINE_DIR/thinkpad-wallpaper.png"; then
-    cp "$WALLPAPER" "$LIMINE_DIR/thinkpad-wallpaper.png"
-    echo "Wallpaper: $LIMINE_DIR/thinkpad-wallpaper.png"
-else
-    echo "Wallpaper already in place: $LIMINE_DIR/thinkpad-wallpaper.png"
-fi
+for a in "${ASSETS[@]}"; do
+    if [[ ! -f "$LIMINE_DIR/$a" ]] || ! cmp -s "$HERE/$a" "$LIMINE_DIR/$a"; then
+        cp "$HERE/$a" "$LIMINE_DIR/$a"
+        echo "Copied:    $LIMINE_DIR/$a"
+    else
+        echo "Up to date: $LIMINE_DIR/$a"
+    fi
+done
 
 TMP="$(mktemp)"
 LOG="$(mktemp)"
