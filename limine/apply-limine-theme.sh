@@ -5,6 +5,13 @@ LIMINE_CONF="${LIMINE_CONF:-/boot/limine.conf}"
 LIMINE_DIR="${LIMINE_DIR:-/boot/limine}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ASSETS=(thinkpad-wallpaper.png thinkpad-font.bin)
+sync_snapshots=0
+for arg in "$@"; do
+    case "$arg" in
+        --sync) sync_snapshots=1 ;;
+        *) echo "ERROR: unknown argument: $arg" >&2; exit 1 ;;
+    esac
+done
 SNIPPET="$HERE/limine-theme-snippet.conf"
 
 for f in "$LIMINE_CONF" "$SNIPPET" "${ASSETS[@]/#/$HERE/}"; do
@@ -79,10 +86,13 @@ fi
 
 sync
 
-if [[ "${SKIP_SYNC:-0}" != 1 ]] && command -v limine-snapper-sync >/dev/null 2>&1; then
-    limine-snapper-sync
-else
-    echo "limine-snapper-sync skipped: not installed or SKIP_SYNC=1"
+if [[ $sync_snapshots -eq 1 ]]; then
+    if command -v limine-snapper-sync >/dev/null 2>&1; then
+        limine-snapper-sync
+    else
+        echo "ERROR: --sync given but limine-snapper-sync was not found" >&2
+        exit 1
+    fi
 fi
 
 echo
